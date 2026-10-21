@@ -1,0 +1,129 @@
+{
+  "license": "MIT",
+  "publishedOn": "2026-10-21",
+  "scope": "Original public teaching examples. Not assessment items, a diagnostic or a score.",
+  "samples": [
+    {
+      "id": "retry-budget",
+      "language": "javascript",
+      "slug": "javascript-retry-budget-challenge",
+      "title": "Can a retry loop exceed its attempt budget?",
+      "shortTitle": "Retry budget challenge",
+      "description": "Trace an off-by-one retry loop, test the zero and three-attempt boundaries, and review a minimal JavaScript repair.",
+      "contract": "maxAttempts is a non-negative integer and is the total number of permitted send calls, including the first call. Stop immediately after a successful call. A budget of zero permits no call.",
+      "before": "function attemptDelivery(maxAttempts, send) {\n  let attempts = 0;\n  while (attempts <= maxAttempts) {\n    attempts++;\n    if (send()) return attempts;\n  }\n  return attempts;\n}",
+      "after": "function attemptDelivery(maxAttempts, send) {\n  let attempts = 0;\n  while (attempts < maxAttempts) {\n    attempts++;\n    if (send()) return attempts;\n  }\n  return attempts;\n}",
+      "question": "With maxAttempts = 3 and send always returning false, how many calls does the original loop make?",
+      "right": "Four calls. The equality case admits one extra attempt.",
+      "wrong": "Three calls, because the budget variable is three.",
+      "explanation": "The loop checks the counter before incrementing it. Values 0, 1, 2 and 3 all satisfy attempts <= 3, so the function calls send four times. At a budget of zero it still calls once. Changing <= to < matches this contract. A different contract that defines retries after an initial attempt would need a different implementation.",
+      "cases": [
+        [
+          "Budget 0, always false",
+          "1 call",
+          "0 calls"
+        ],
+        [
+          "Budget 3, always false",
+          "4 calls",
+          "3 calls"
+        ],
+        [
+          "Budget 3, first call succeeds",
+          "1 call",
+          "1 call"
+        ]
+      ],
+      "source": {
+        "title": "while statement",
+        "publisher": "MDN Web Docs",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/while",
+        "note": "The loop condition is evaluated before each iteration."
+      },
+      "limits": "This synchronous teaching example does not implement backoff, cancellation, timeouts, idempotency or production network error handling."
+    },
+    {
+      "id": "iterator-consumption",
+      "language": "python",
+      "slug": "python-iterator-consumption-challenge",
+      "title": "Why does this Python total work for a list but fail for a generator?",
+      "shortTitle": "Iterator consumption challenge",
+      "description": "Review a validation pass that exhausts a generator, then compare a one-pass Python repair using executable counterexamples.",
+      "contract": "Accept a finite iterable of rows containing integer quantity values. Reject a negative quantity with ValueError and otherwise return the sum. A list and a one-shot generator containing the same rows must give the same result.",
+      "before": "def total_quantity(lines):\n    if any(row[\"quantity\"] < 0 for row in lines):\n        raise ValueError(\"negative quantity\")\n    return sum(row[\"quantity\"] for row in lines)",
+      "after": "def total_quantity(lines):\n    total = 0\n    for row in lines:\n        quantity = row[\"quantity\"]\n        if quantity < 0:\n            raise ValueError(\"negative quantity\")\n        total += quantity\n    return total",
+      "question": "For a generator yielding quantities 2 and 5, what does the original function return?",
+      "right": "Zero. The validation pass consumes the non-negative generator.",
+      "wrong": "Seven. A new generator expression restarts the underlying input.",
+      "explanation": "The generator expression passed to any reads the underlying iterable. Because both quantities are non-negative, it reaches the end while looking for a true condition. A list can be traversed again, but a generator cannot be restarted by wrapping it in another expression. The repair validates and accumulates in one pass. It also avoids materializing an arbitrarily large input.",
+      "cases": [
+        [
+          "List containing 2 and 5",
+          "7",
+          "7"
+        ],
+        [
+          "Generator yielding 2 and 5",
+          "0",
+          "7"
+        ],
+        [
+          "Empty generator",
+          "0",
+          "0"
+        ],
+        [
+          "Generator yielding 2 and -1",
+          "ValueError",
+          "ValueError"
+        ]
+      ],
+      "source": {
+        "title": "Iterators in the functional programming HOWTO",
+        "publisher": "Python documentation",
+        "url": "https://docs.python.org/3/howto/functional.html#iterators",
+        "note": "Iterators advance through a stream; exhausting one does not reset it."
+      },
+      "limits": "The contract assumes finite input and integer quantities. This example does not validate row schemas, handle an infinite iterable or roll back external side effects."
+    },
+    {
+      "id": "explicit-false",
+      "language": "typescript",
+      "slug": "typescript-explicit-false-challenge",
+      "title": "Why does a TypeScript default erase an explicit false?",
+      "shortTitle": "Explicit false challenge",
+      "description": "Test a boolean default with false and an omitted field, then use nullish coalescing to preserve an explicit user choice.",
+      "contract": "The optional showHints boolean defaults to true when omitted. An explicitly supplied false must remain false. Inputs are assumed to satisfy the TypeScript type.",
+      "before": "function showHints(options: { showHints?: boolean }): boolean {\n  return options.showHints || true;\n}",
+      "after": "function showHints(options: { showHints?: boolean }): boolean {\n  return options.showHints ?? true;\n}",
+      "question": "What does the original function return for { showHints: false }?",
+      "right": "True. Logical OR replaces every falsy left operand.",
+      "wrong": "False. The optional boolean type preserves the value at runtime.",
+      "explanation": "A type annotation does not change JavaScript evaluation. The || operator chooses the fallback when the left operand is falsy, which includes false. The ?? operator uses its fallback only for null or undefined, so it preserves false. Under this declared input type, omission produces undefined and therefore defaults to true.",
+      "cases": [
+        [
+          "{ showHints: false }",
+          "true",
+          "false"
+        ],
+        [
+          "{ showHints: true }",
+          "true",
+          "true"
+        ],
+        [
+          "{}",
+          "true",
+          "true"
+        ]
+      ],
+      "source": {
+        "title": "Nullish coalescing in TypeScript 3.7",
+        "publisher": "TypeScript documentation",
+        "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#nullish-coalescing",
+        "note": "Nullish coalescing falls back for null or undefined instead of all falsy values."
+      },
+      "limits": "TypeScript types do not validate untrusted JSON at runtime. Add boundary validation when an input may contain values outside the declared boolean type."
+    }
+  ]
+}
